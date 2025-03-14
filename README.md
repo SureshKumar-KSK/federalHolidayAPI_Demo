@@ -18,7 +18,7 @@ The Federal Holiday Application API is a RESTful service that allows users to ma
 
 **Features**
 
-* **a new federal holiday with validation for country code, holiday name, and date.
+* New federal holiday with validation for country code, holiday name, and date.
 
 
 * Update existing holidays by ID, country code, or date.
@@ -62,6 +62,7 @@ Gradle 7.1 or higher
 
 **Steps**
 **Clone the repository**
+https://github.com/SureshKumar-KSK/federalHolidayAPI_Demo.git
 
 **Build the project:**
 ./gradlew build
