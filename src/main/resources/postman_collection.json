@@ -1,0 +1,141 @@
+{
+  "info": {
+    "_postman_id": "your-postman-id",
+    "name": "Federal Holidays API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All Holidays",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8081/api/federal-holidays",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["api", "federal-holidays"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Holidays by Country Code",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8081/api/federal-holidays/US",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["api", "federal-holidays", "US"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Add a Holiday",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"countryCode\": \"US\",\n  \"countryName\": \"United States\",\n  \"holidayName\": \"Christmas\",\n  \"holidayDate\": \"2023-12-25\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8081/api/federal-holidays",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["api", "federal-holidays"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update Holiday by ID and Country Code",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"countryCode\": \"US\",\n  \"countryName\": \"United States\",\n  \"holidayName\": \"Christmas\",\n  \"holidayDate\": \"2023-12-26\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8081/api/federal-holidays/1/US",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["api", "federal-holidays", "1", "US"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update Holiday by Country Code and Date",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"countryCode\": \"US\",\n  \"countryName\": \"United States\",\n  \"holidayName\": \"Christmas\",\n  \"holidayDate\": \"2023-12-26\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8081/api/federal-holidays/by-date/US/2023-12-25",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["api", "federal-holidays", "by-date", "US", "2023-12-25"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Upload Holidays from File",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "multipart/form-data"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "files",
+              "type": "file",
+              "src": "/path/to/your/file.csv"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://localhost:8081/api/federal-holidays/upload",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["api", "federal-holidays", "upload"]
+        }
+      },
+      "response": []
+    }
+  ]
+}
