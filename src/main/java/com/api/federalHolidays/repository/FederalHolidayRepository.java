@@ -25,7 +25,7 @@ public interface FederalHolidayRepository extends JpaRepository<FederalHoliday, 
     // Check if a holiday exists with the same country code, country name and holiday date
     boolean existsByCountryCodeAndHolidayName(String countryCode, String holidayName);
 
-    //void deleteByCountryCodeAndHolidayDate(String countryCode, LocalDate holidayDate);
+    //void deleteByCountryCodeAndHolidayDate(String countryCode, LocalDate existsByCountryCodeAndHolidayDate);
 
     boolean existsByCountryCode(String countryCode);
 
@@ -37,6 +37,8 @@ public interface FederalHolidayRepository extends JpaRepository<FederalHoliday, 
 
     boolean existsByCountryCodeAndHolidayDate(String countryCode, LocalDate holidayDate);
 
+
+    boolean existsByCountryCodeAndHolidayDateAndHolidayName(String countryCode, LocalDate holidayDate, String holidayName);
     @Modifying
     @Query("DELETE FROM FederalHoliday f WHERE f.countryCode = :countryCode")
     int deleteByCountryCode(String countryCode);

@@ -763,11 +763,12 @@ country.setCountryName("United States");
         country.setCountryCode("001");
         country.setCountryName("United States");
         
-        when(countryRepository.findById(countryCode)).thenReturn(Optional.of(country));
         when(federalHolidayRepository.findByIdAndCountryCode(id, countryCode)).thenReturn(Optional.of(holiday));
-        when(countryRepository.findById(countryCode)).thenReturn(Optional.of(country));
+        when(countryRepository.existsByCountryCodeAndCountryName(countryCode,request.getCountryName())).thenReturn(true);
+
         when(federalHolidayRepository.existsByCountryCodeAndHolidayName(countryCode, "New Year Updated")).thenReturn(false);
-        when(federalHolidayRepository.existsByCountryCodeAndHolidayDate(countryCode, LocalDate.of(2025, 1, 1))).thenReturn(false);
+        when(federalHolidayRepository.existsByCountryCodeAndHolidayDateAndHolidayName(countryCode, LocalDate.of(2025, 1, 1), request.getHolidayName())).thenReturn(false);
+
         when(federalHolidayRepository.save(any(FederalHoliday.class))).thenReturn(holiday);
 
         // Call service method
@@ -799,26 +800,32 @@ country.setCountryName("United States");
     public void testUpdateHolidayByIdAndCountryCode_DuplicateHoliday() {
         Long id = 1L;
         String countryCode = "001";
-        FederalHolidayRequest request = new FederalHolidayRequest("001", "United States", "2025-01-01", "New Year");
+        FederalHolidayRequest request = new FederalHolidayRequest("001", "United States", "2025-01-01", "New Year Day");
         FederalHoliday holiday = new FederalHoliday();
         holiday.setId(1L);
         holiday.setCountryCode("001");
         holiday.setCountryName("United States");
         holiday.setHolidayDate(LocalDate.of(2025, 01, 01));
         holiday.setHolidayName("New Year");
+        FederalHoliday holiday2 = new FederalHoliday();
+        holiday2.setId(1L);
+        holiday2.setCountryCode("001");
+        holiday2.setCountryName("United States");
+        holiday2.setHolidayDate(LocalDate.of(2025, 01, 01));
+        holiday2.setHolidayName("New Year ");
+
         
         Country country=new Country();
         country.setCountryCode("001");
         country.setCountryName("United States");
-        when(countryRepository.findById(countryCode)).thenReturn(Optional.of(country));
         when(federalHolidayRepository.findByIdAndCountryCode(id, countryCode)).thenReturn(Optional.of(holiday));
-        when(federalHolidayRepository.existsByCountryCodeAndHolidayName(countryCode, "New Year")).thenReturn(true);
+        when(countryRepository.existsByCountryCodeAndCountryName(countryCode, request.getCountryName())).thenReturn(true);
+        when(federalHolidayRepository.existsByCountryCodeAndHolidayName(countryCode, request.getHolidayName())).thenReturn(true);
 
         
-        CustomException exception = assertThrows(CustomException.class, () ->
+        DuplicateRecordException exception = assertThrows(DuplicateRecordException.class, () ->
                 federalHolidayService.updateHolidayByIdAndCountryCode(id, countryCode, request));
-        assertEquals("Holiday name or date already exists for the country", exception.getMessage());
-        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        assertEquals("Holiday name already exists for the country.", exception.getMessage());
     }
 
     // Success Scenario: Update holiday by country code and date
@@ -837,11 +844,11 @@ country.setCountryName("United States");
         Country country=new Country();
         country.setCountryCode("001");
         country.setCountryName("United States");
-        when(countryRepository.findById(countryCode)).thenReturn(Optional.of(country));
+        when(countryRepository.existsByCountryCodeAndCountryName(countryCode,request.getCountryName())).thenReturn(true);
+
         when(federalHolidayRepository.findByCountryCodeAndHolidayDate(countryCode, LocalDate.of(2025, 1, 1)))
                 .thenReturn(Optional.of(holiday));
         when(federalHolidayRepository.existsByCountryCodeAndHolidayName(countryCode, "New Year Updated")).thenReturn(false);
-        when(federalHolidayRepository.existsByCountryCodeAndHolidayDate(countryCode, LocalDate.of(2025, 1, 1))).thenReturn(false);
         when(federalHolidayRepository.save(any(FederalHoliday.class))).thenReturn(holiday);
 
         // Call service method
@@ -874,7 +881,7 @@ country.setCountryName("United States");
     public void testUpdateHolidayByCountryCodeAndDate_DuplicateHoliday() {
         String countryCode = "001";
         String holidayDate = "2025-01-01";
-        FederalHolidayRequest request = new FederalHolidayRequest("001", "United States", "2025-01-01", "New Year");
+        FederalHolidayRequest request = new FederalHolidayRequest("001", "United States", "2025-02-01", "New Year");
         FederalHoliday holiday = new FederalHoliday();
         holiday.setId(1L);
         holiday.setCountryCode("001");
@@ -884,17 +891,15 @@ country.setCountryName("United States");
         Country country=new Country();
         country.setCountryCode("001");
         country.setCountryName("United States");
-        when(countryRepository.findById(countryCode)).thenReturn(Optional.of(country));
-        
+        when(countryRepository.existsByCountryCodeAndCountryName(countryCode,request.getCountryName())).thenReturn(true);
         when(federalHolidayRepository.findByCountryCodeAndHolidayDate(countryCode, LocalDate.of(2025, 1, 1)))
                 .thenReturn(Optional.of(holiday));
-        when(federalHolidayRepository.existsByCountryCodeAndHolidayName(countryCode, "New Year")).thenReturn(true);
+        when(federalHolidayRepository.existsByCountryCodeAndHolidayDate(countryCode, LocalDate.parse(request.getHolidayDate()))).thenReturn(true);
 
         
-        CustomException exception = assertThrows(CustomException.class, () ->
+        DuplicateRecordException exception = assertThrows(DuplicateRecordException.class, () ->
                 federalHolidayService.updateHolidayByCountryCodeAndDate(countryCode, holidayDate, request));
-        assertEquals("Holiday name or date already exists for the country", exception.getMessage());
-        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        assertEquals("Holiday date already exists for the country.", exception.getMessage());
     }
     // Date Validation: Invalid Date Format (e.g., 2025-02-30)
     @Test
@@ -949,9 +954,9 @@ country.setCountryName("United States");
     // Country Code Validation: Invalid Characters (e.g., more than 3 characters)
     @Test
     public void testAddHoliday_InvalidCountryCode_MoreThanThreeCharacters() {
-        FederalHolidayRequest request = new FederalHolidayRequest("1234", "United States", "2023-01-01", "Invalid Country Code");
+        FederalHolidayRequest request = new FederalHolidayRequest("1234", "United States", "2025-01-01", "Invalid Country Code");
 
-        
+
         CustomException exception = assertThrows(CustomException.class, () ->
                 federalHolidayService.addHoliday(request));
         assertEquals("Country code must be 1 to 3 alphanumeric characters. Provided: 1234.", exception.getMessage());
@@ -961,9 +966,9 @@ country.setCountryName("United States");
     // Country Code Validation: Invalid Characters (e.g., special characters)
     @Test
     public void testAddHoliday_InvalidCountryCode_SpecialCharacters() {
-        FederalHolidayRequest request = new FederalHolidayRequest("00@", "United States", "2023-01-01", "Invalid Country Code");
+        FederalHolidayRequest request = new FederalHolidayRequest("00@", "United States", "2025-01-01", "Invalid Country Code");
 
-        
+
         CustomException exception = assertThrows(CustomException.class, () ->
                 federalHolidayService.addHoliday(request));
         assertEquals("Country code must be 1 to 3 alphanumeric characters. Provided: 00@.", exception.getMessage());
@@ -973,9 +978,9 @@ country.setCountryName("United States");
     // Country Code Validation: Empty Country Code
     @Test
     public void testAddHoliday_EmptyCountryCode() {
-        FederalHolidayRequest request = new FederalHolidayRequest("", "United States", "2023-01-01", "Empty Country Code");
+        FederalHolidayRequest request = new FederalHolidayRequest("", "United States", "2025-01-01", "Empty Country Code");
 
-        
+
         CustomException exception = assertThrows(CustomException.class, () ->
                 federalHolidayService.addHoliday(request));
         assertEquals("Country code is required.", exception.getMessage());
@@ -985,13 +990,119 @@ country.setCountryName("United States");
     // Country Code Validation: Null Country Code
     @Test
     public void testAddHoliday_NullCountryCode() {
-        FederalHolidayRequest request = new FederalHolidayRequest(null, "United States", "2023-01-01", "Null Country Code");
+        FederalHolidayRequest request = new FederalHolidayRequest(null, "United States", "2025-01-01", "Null Country Code");
 
-        
+
         CustomException exception = assertThrows(CustomException.class, () ->
                 federalHolidayService.addHoliday(request));
         assertEquals("Country code is required.", exception.getMessage());
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
     }
 
+
+    // Test data
+    private static final String COUNTRY_CODE = "USA";
+    private static final String COUNTRY_NAME = "United States";
+    private static final String HOLIDAY_NAME = "New Year";
+    private static final String HOLIDAY_DATE = "2025-01-01";
+
+
+    // Error Scenarios
+
+    @Test
+    public void testUpdateHolidayByIdAndCountryCode_DuplicateRecord_ThrowsException() {
+        // Arrange
+        FederalHolidayRequest request = new FederalHolidayRequest();
+        request.setCountryCode(COUNTRY_CODE);
+        request.setCountryName(COUNTRY_NAME);
+        request.setHolidayName(HOLIDAY_NAME);
+        request.setHolidayDate(HOLIDAY_DATE);
+
+        FederalHoliday existingHoliday = new FederalHoliday();
+        existingHoliday.setId(1L);
+        existingHoliday.setCountryCode(COUNTRY_CODE);
+        existingHoliday.setCountryName(COUNTRY_NAME);
+        existingHoliday.setHolidayName(HOLIDAY_NAME);
+        existingHoliday.setHolidayDate(LocalDate.parse("2025-01-01"));
+
+        when(federalHolidayRepository.findByIdAndCountryCode(1L, request.getCountryCode())).thenReturn(Optional.of(existingHoliday));
+        when(countryRepository.existsByCountryCodeAndCountryName(COUNTRY_CODE, COUNTRY_NAME)).thenReturn(true);
+        when(federalHolidayRepository.existsByCountryCodeAndHolidayDateAndHolidayName(COUNTRY_CODE, LocalDate.parse(HOLIDAY_DATE), HOLIDAY_NAME))
+                .thenReturn(true);
+
+        // Act & Assert
+        DuplicateRecordException exception = assertThrows(DuplicateRecordException.class, () -> {
+            federalHolidayService.updateHolidayByIdAndCountryCode(1L, COUNTRY_CODE, request);
+        });
+
+        assertEquals("A record with the same country code, holiday date, and holiday name already exists.", exception.getMessage());
+    }
+
+    @Test
+    public void testUpdateHolidayByIdAndCountryCode_InvalidInput_ThrowsException() {
+        // Arrange
+        FederalHolidayRequest request = new FederalHolidayRequest();
+        request.setCountryCode(COUNTRY_CODE);
+        request.setCountryName(COUNTRY_NAME);
+        request.setHolidayName(HOLIDAY_NAME);
+        request.setHolidayDate(HOLIDAY_DATE);
+
+        when(federalHolidayRepository.findByIdAndCountryCode(1L,request.getCountryCode())).thenReturn(Optional.empty());
+
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
+            federalHolidayService.updateHolidayByIdAndCountryCode(1L, COUNTRY_CODE, request);
+        });
+
+        assertEquals("Holiday not found with ID: 1 and country code: USA", exception.getMessage());
+    }
+
+    @Test
+    public void testUpdateHolidayByCountryCodeAndDate_DuplicateRecord_ThrowsException() {
+        // Arrange
+        FederalHolidayRequest request = new FederalHolidayRequest();
+        request.setCountryCode(COUNTRY_CODE);
+        request.setCountryName(COUNTRY_NAME);
+        request.setHolidayName(HOLIDAY_NAME);
+        request.setHolidayDate(HOLIDAY_DATE);
+
+        FederalHoliday existingHoliday = new FederalHoliday();
+        existingHoliday.setId(1L);
+        existingHoliday.setCountryCode(COUNTRY_CODE);
+        existingHoliday.setHolidayName("Old Holiday");
+        existingHoliday.setHolidayDate(LocalDate.parse("2025-01-01"));
+
+        when(federalHolidayRepository.findByCountryCodeAndHolidayDate(COUNTRY_CODE, LocalDate.parse(HOLIDAY_DATE)))
+                .thenReturn(Optional.of(existingHoliday));
+        when(countryRepository.existsByCountryCodeAndCountryName(COUNTRY_CODE, COUNTRY_NAME)).thenReturn(true);
+        when(federalHolidayRepository.existsByCountryCodeAndHolidayDateAndHolidayName(COUNTRY_CODE, LocalDate.parse(HOLIDAY_DATE), HOLIDAY_NAME))
+                .thenReturn(true);
+
+        // Act & Assert
+        DuplicateRecordException exception = assertThrows(DuplicateRecordException.class, () -> {
+            federalHolidayService.updateHolidayByCountryCodeAndDate(COUNTRY_CODE, HOLIDAY_DATE, request);
+        });
+
+        assertEquals("A record with the same country code, holiday date, and holiday name already exists.", exception.getMessage());
+    }
+
+    @Test
+    public void testUpdateHolidayByCountryCodeAndDate_ResourceNotFound_ThrowsException() {
+        // Arrange
+        FederalHolidayRequest request = new FederalHolidayRequest();
+        request.setCountryCode(COUNTRY_CODE);
+        request.setCountryName(COUNTRY_NAME);
+        request.setHolidayName(HOLIDAY_NAME);
+        request.setHolidayDate(HOLIDAY_DATE);
+
+        when(federalHolidayRepository.findByCountryCodeAndHolidayDate(COUNTRY_CODE, LocalDate.parse(HOLIDAY_DATE)))
+                .thenReturn(Optional.empty());
+
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
+            federalHolidayService.updateHolidayByCountryCodeAndDate(COUNTRY_CODE, HOLIDAY_DATE, request);
+        });
+
+        assertEquals("Holiday not found with country code: USA and date: 2025-01-01", exception.getMessage());
+    }
 }

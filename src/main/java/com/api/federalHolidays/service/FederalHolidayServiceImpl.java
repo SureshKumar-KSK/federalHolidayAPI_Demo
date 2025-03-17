@@ -72,41 +72,33 @@ public class FederalHolidayServiceImpl implements FederalHolidayService {
 
     }
 
-    // Update Holiday Date & Holiday name
+    // Update unique Holiday Date & Holiday name, or either unique holiday name  or holiday date for the country
     @Override
     @Transactional
     public FederalHolidayResponse updateHolidayByIdAndCountryCode(Long id, String countryCode, FederalHolidayRequest request) {
         //check id & country code exist in federal holiday table
-        FederalHoliday holiday = federalHolidayRepository.findByIdAndCountryCode(id, countryCode)
+        FederalHoliday existingHoliday = federalHolidayRepository.findByIdAndCountryCode(id, countryCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Holiday not found with ID: " + id + " and country code: " + countryCode));
-        validateUpdateRequest(request);
-        LocalDate holidayParsedDate = DateValidator.validateAndParseDate(request.getHolidayDate());
-        // Check if the new holiday name or date already exists for the country
-        if (isHolidayNameOrDateExistsForCountry(countryCode, request.getHolidayName(), holidayParsedDate)) {
-            throw new CustomException("Holiday name or date already exists for the country", HttpStatus.CONFLICT);
-        }
-        FederalHoliday updatedHoliday = mapToEntityAndSave(request, holiday);// set to an entity and save
+        // Validate country code and name
+
+FederalHoliday updatedHoliday = validateUpdateRequest(existingHoliday, request);
+
+
         String message="Holiday updated successfully";
         return mapToResponse(updatedHoliday,message);
     }
 
-    // Update Holiday Name
+    // Update unique Holiday Date & Holiday name, or either unique holiday name  or holiday date for the country
     @Override
     @Transactional
     public FederalHolidayResponse updateHolidayByCountryCodeAndDate(String countryCode, String holidayDate, FederalHolidayRequest request) {
         // date validation
         LocalDate parsedHolidayDate = DateValidator.validateAndParseDate(holidayDate);
         // check country code & holiday date exist in federal holiday table
-        FederalHoliday holiday = federalHolidayRepository.findByCountryCodeAndHolidayDate(countryCode, parsedHolidayDate)
+        FederalHoliday existingHoliday = federalHolidayRepository.findByCountryCodeAndHolidayDate(countryCode, parsedHolidayDate)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Holiday not found with country code: " + countryCode + " and date: " + holidayDate));
-        validateUpdateRequest(request);
-        LocalDate holidayParsedDate = DateValidator.validateAndParseDate(request.getHolidayDate());
-        // Check if the new holiday name or date already exists for the country
-        if (isHolidayNameOrDateExistsForCountry(countryCode, request.getHolidayName(), holidayParsedDate)) {
-            throw new CustomException("Holiday name or date already exists for the country", HttpStatus.CONFLICT);
-        }
-        FederalHoliday updatedHoliday = mapToEntityAndSave(request, holiday);
+        FederalHoliday updatedHoliday = validateUpdateRequest(existingHoliday, request);
         String message="Holiday updated successfully";
         return mapToResponse(updatedHoliday, message);
     }
@@ -377,14 +369,64 @@ public class FederalHolidayServiceImpl implements FederalHolidayService {
         return isHolidayNameExists || isHolidayDateExists;
     }
 
-    private void validateUpdateRequest(FederalHolidayRequest request) {
-        // Validate country code and name
-        Country country = countryRepository.findById(request.getCountryCode())
-                .orElseThrow(() -> new CustomException("Country code not found: " +request.getCountryCode() , HttpStatus.BAD_REQUEST));
+    private boolean isHolidayNameDateExistsForCountry(String countryCode, String holidayName, LocalDate holidayDate) {
+        // Check if the holiday name already exists for the country
+        boolean isHolidayNameExists = federalHolidayRepository.existsByCountryCodeAndHolidayName(countryCode, holidayName);
+        boolean isHolidayDateExists = federalHolidayRepository.existsByCountryCodeAndHolidayDate(countryCode, holidayDate);
 
-        if (!country.getCountryName().equals(request.getCountryName())) {
-            throw new CustomException("Country name: " + request.getCountryName() + " does not match the country code", HttpStatus.BAD_REQUEST);
+        if (isHolidayDateExists) {
+            if (isHolidayNameExists) {
+                throw new CustomException("Holiday name and date already exists for the country", HttpStatus.CONFLICT);
+                //return true;
+            } else {
+                return false;
+            }
+        } else {
+            if (isHolidayNameExists) {
+                throw new CustomException("Holiday name  already exists for the country", HttpStatus.CONFLICT);
+                //return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    private FederalHoliday validateUpdateRequest(FederalHoliday existingHoliday,FederalHolidayRequest request) {
+        // Validate country code and name
+        if (!existingHoliday.getCountryCode().equals(request.getCountryCode())) {
+            throw new CustomException("Country code does not match the existing record.", HttpStatus.CONFLICT);
         }
 
+        // Check if the country code and name exist in the country table
+        if (!countryRepository.existsByCountryCodeAndCountryName(request.getCountryCode(), request.getCountryName())) {
+            throw new CustomException("Country code and name combination does not exist.", HttpStatus.CONFLICT);
+        }
+        LocalDate newHolidayDate = DateValidator.validateAndParseDate(request.getHolidayDate());
+        // Check if the holiday date already exists for the country
+
+        if (federalHolidayRepository.existsByCountryCodeAndHolidayDateAndHolidayName(request.getCountryCode(), newHolidayDate, request.getHolidayName())) {
+            throw new DuplicateRecordException("A record with the same country code, holiday date, and holiday name already exists.");
+        }
+        // Validate and update holiday name
+        if (request.getHolidayName() != null && !request.getHolidayName().isEmpty()) {
+            if (!request.getHolidayName().equals(existingHoliday.getHolidayName()) &&
+                    federalHolidayRepository.existsByCountryCodeAndHolidayName(request.getCountryCode(), request.getHolidayName())) {
+                throw new DuplicateRecordException("Holiday name already exists for the country.");
+            }
+            existingHoliday.setHolidayName(request.getHolidayName());
+        }
+
+        // Validate and update holiday date
+        if (request.getHolidayDate() != null && !request.getHolidayDate().isEmpty()) {
+            if (!newHolidayDate.equals(existingHoliday.getHolidayDate()) &&
+                    federalHolidayRepository.existsByCountryCodeAndHolidayDate(request.getCountryCode(), newHolidayDate)) {
+                throw new DuplicateRecordException("Holiday date already exists for the country.");
+            }
+            existingHoliday.setHolidayDate(newHolidayDate);
+        }
+        mapToEntityAndSave(request, existingHoliday);
+        return existingHoliday;
     }
+
+
 }
