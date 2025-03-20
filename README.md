@@ -1,9 +1,7 @@
 Federal Holiday Application API
 ==========================
 
-The Federal Holiday Application API is a RESTful service that allows users to manage federal holidays for different countries. It provides functionalities to add, update, delete, and retrieve holiday data.The Federal Holiday Application API is a RESTful service that allows users to manage federal holidays for different countries. It provides functionalities to add, update, delete, and retrieve holiday data. The API ensures Of validating inputs (e.g., date format, country code).
-
-## Table of Contents
+The Federal Holiday Application API is a RESTful service that allows users to manage federal holidays for different countries. It provides functionalities to add, update, delete, and retrieve holiday data. The API ensures Of validating inputs (e.g., date format, country code).
 * #### Features
 
 * #### Technologies Used
